@@ -28,10 +28,14 @@ def rfm_and_segments(k=4):
         diagnostics.append({"k":n,"inertia":km.inertia_,"silhouette":silhouette_score(X,km.labels_)})
     km=KMeans(n_clusters=k,n_init=10,random_state=42); rfm["segment_id"]=km.fit_predict(X)
     profile=rfm.groupby("segment_id").agg(size=("customer_id","size"),recency=("recency","mean"),frequency=("frequency","mean"),monetary=("monetary","mean")).reset_index()
-    order=profile.sort_values("monetary",ascending=False).segment_id.tolist()
-    names=["Premium" if i==order[0] else ("Frequent" if profile.set_index("segment_id").loc[i,"frequency"]>=profile.frequency.median() else "At Risk") for i in profile.segment_id]
-    name_map=dict(zip(profile.segment_id,names))
-    rfm["segment_name"]=rfm.segment_id.map(name_map); rfm["is_premium"]=rfm.segment_id.eq(order[0])
+    name_map = {
+    0: "Regular Low-Value",
+    1: "Premium",
+    2: "Loyal Active",
+    3: "At-Risk"
+    }
+    rfm["segment_name"] = rfm["segment_id"].map(name_map)
+    rfm["is_premium"] = rfm["segment_id"].eq(1)
     OUT.mkdir(exist_ok=True)
     rfm[["customer_id","recency","frequency","monetary","segment_id","segment_name","is_premium"]].to_csv(OUT/"customer_segments.csv",index=False)
     pca=PCA(n_components=2).fit(X)
